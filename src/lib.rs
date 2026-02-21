@@ -1,5 +1,5 @@
-use std::error::Error;
-use std::fs;
+use std::error::Error;  //to handle error.
+use std::fs;    //need to read file.
 
 pub struct Config{
     query:String,
@@ -18,11 +18,36 @@ impl Config{
     }
 }
 //This function is for the searching logic.
+pub fn search<'a>(query:&str,contents:&'a str)->Vec<&'a str>{ //here we define liferime 'a and use that lifetime with contents argument and return type.
+    //we need the return type to live as long as the contents live.cause our function will return reference to matched portion of contents.
+    let mut result=Vec::new();
+    for line in contents.lines(){
+        if line.contains(query){
+            result.push(line);
+        }
+    }
+    result
+}
+
 pub fn run(config:Config)->Result<(),Box<dyn Error>>{   //Error is a trait.it means some type that behaves like an error.
     //dyn cause at compiletime we don't know exact what type it is.Box is for heap allocation cause trait objects have unknown size at compile time.
-    println!("Searching {} in {}",config.query,config.filepath);
     let contents=fs::read_to_string(config.filepath)?;  //the ? operator converts errors automatically into Box<dyn Error>.
     //i.e. if fs::read_to_string() returns std::io::Error then it's automatically converted into Err(Box<dyn Error>).
-    println!("with text:\n{contents}");
+    for line in search(&config.query,&contents){
+        println!("{line}");
+    }
     Ok(())
+}
+
+//now we will add tests cause it helps to check our functions are working before integrating everything.
+#[cfg(test)]    //this is configuration attribute.it means compile this code only when running tests.i.e. cargo test.
+mod tests{  //private test-only modules.
+    use super::*;   //import everything from parent module.
+
+    #[test] //test function marker.
+    fn one_result(){
+        let query="duck";
+        let contents="duck off";
+        assert_eq!(vec!["duck off"],search(query,contents));
+    }
 }
