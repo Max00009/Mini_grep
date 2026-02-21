@@ -1,5 +1,5 @@
-use std::env;
-use std::process;
+use std::env;   //to collect arguments.
+use std::process;   //to terminate process with exit code.
 use minigrep::{Config,run};
 fn main(){
     let args:Vec<String>=env::args().collect(); //we collect the arguments from command line.
