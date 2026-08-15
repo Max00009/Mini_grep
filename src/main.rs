@@ -3,7 +3,7 @@ use std::process;   //to terminate process with exit code.
 use minigrep::{Config,run};
 fn main(){
     let args:Vec<String>=env::args().collect(); //we collect the arguments from command line.
-    let config=Config::new(&args).unwrap_or_else(|err|{     //we send the arguments to new function for parsing.
+    let config=Config::new(&args).unwrap_or_else(|err|{  //we send the arguments to new function for parsing.
         println!("Problem parsing arguments:{}",err);
         process::exit(1);
     });
