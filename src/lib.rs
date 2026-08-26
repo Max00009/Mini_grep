@@ -10,12 +10,18 @@ pub struct Config{
 impl Config{
     //associated function to parse the arguments.
     //insetad of creating a separate function we create a associate function cause this function is related to the config struct.It's for good abstract(as mentioned in Rust book)
-    pub fn new(args:&[String])->Result<Config,&'static str>{    //static means the string's lifetime is as long as the program executes.
-        if args.len()<3{
-            return Err("not enough arguments"); //we are returning failure product=Err() here
-        }
-        let query=args[1].clone();
-        let filepath=args[2].clone();
+    pub fn build(mut args: impl Iterator<Item=String>)->Result<Config,&'static str>{    //static means the string's lifetime is as long as the program executes.we are declaring args as mut cause later we will call .next() which will change the internal state of the iterator.
+        args.next(); //iterator moves from -1 index to 0 index which holds program name.we don't use it.
+        
+        let query=match args.next(){
+            Some(arg)=>arg,
+            None=>return Err("No query string found."),
+        };
+        let filepath=match args.next(){
+            Some(arg)=>arg,
+            None=>return Err("No file_path found."),
+        };
+        
         let ignore_case=env::var("IGNORE_CASE").is_ok(); //env::var() returns a Result<Ok,Err>.we don't care about the error.we only want to know if it's ok.that's why we are using is_ok()
         Ok(Config{query,filepath,ignore_case}) //We are returning success product=Ok() here
     }
@@ -23,27 +29,16 @@ impl Config{
 //This function is for the searching logic.
 pub fn search<'a>(query:&str,contents:&'a str)->Vec<&'a str>{ //here we define liferime 'a and use that lifetime with contents argument and return type.
     //we need the return type to live as long as the contents live.cause our function will return reference to matched portion of contents.
-    let mut results=Vec::new();
-    for line in contents.lines(){
-        if line.contains(query){
-            results.push(line);
-        }
-    }
-    results
+    
+    contents.lines().filter(|line| line.contains(query)).collect()//first content.lines() return an iteartor on which we call filter iteartor adapter
+    //which takes a closure and only let's lines pass through if the closure returns true.then we collect those lines into a vector and return it.
 }
 
 pub fn search_case_insensitive<'a>(query:&str,contents:&'a str)->Vec<&'a str>{
     //first we need to lower the query
     let query=query.to_lowercase();
-    let mut results=Vec::new();
-    for line in contents.lines(){
-        if line.to_lowercase().contains(&query){ //here we lower the lines from contents.notice one thing we are passing '&' infront of query inside contains()
-        //cause to_lowercase() returns a String but contains() expect a str slice.so we add '&' which is technically &String but Rust's Deref Coercion automatically converts the &String into a &str behind the scenes.
-           results.push(line);
-        }
-    }
-
-    results
+    contents.lines().filter(|line| line.to_lowercase().contains(&query)).collect() //if line.to_lowercase().contains(&query){ //here we lower the lines from contents.notice one thing we are passing '&' infront of query inside contains()
+            //cause to_lowercase() returns a String but contains() expect a str slice.so we add '&' which is technically &String but Rust's Deref Coercion automatically converts the &String into a &str behind the scenes.
 }
 
 pub fn run(config:Config)->Result<(),Box<dyn Error>>{   //Error is a trait.it means some type that behaves like an error.
